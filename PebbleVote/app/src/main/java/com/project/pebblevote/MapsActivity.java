@@ -121,8 +121,6 @@ public class MapsActivity extends FragmentActivity
         mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
     }
 
-<<<<<<< HEAD
-
     @Override
     protected void onStart() {
         super.onStart();
@@ -135,7 +133,7 @@ public class MapsActivity extends FragmentActivity
     protected void onStop() {
         mGoogleApiClient.disconnect();
         super.onStop();
-=======
+    }
     private class FetchServerHealth extends AsyncTask<Void, Void, String> {
 
         @Override
@@ -310,6 +308,5 @@ public class MapsActivity extends FragmentActivity
 
             return null;
         }
->>>>>>> 6b25d0891e5c98f7725c1375227e3dd569ab4ed2
     }
 }
