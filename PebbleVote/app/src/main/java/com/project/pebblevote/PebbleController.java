@@ -7,6 +7,7 @@ import com.getpebble.android.kit.*;
 import com.getpebble.android.kit.util.PebbleDictionary;
 import com.google.android.gms.maps.model.LatLng;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -19,18 +20,18 @@ public class PebbleController {
     private static final int SCORE_KEY = 3;
 
 
-    public void sendLocations(Context context, LatLng curLatLng){
-        AsyncTask fetchLocationList = new MapsActivity.FetchLocationList().execute(curLatLng);
-
-        PebbleDictionary data = new PebbleDictionary();
-
-        // Add a key of 0
-        data.addUint8(0, (byte) 42);
-
-        // Add a key of 1, and a string value.
-        data.addString(1, "A string");
-
-        PebbleKit.sendDataToPebble(context.getApplicationContext(), PEBBLE_APP_UUID, data);
-
-    }
+//    public void sendLocations(Context context, LatLng curLatLng, List<LocationModel> results){
+//        AsyncTask fetchLocationList = new MapsActivity.FetchLocationList().execute(curLatLng);
+//
+//        PebbleDictionary data = new PebbleDictionary();
+//
+//        // Add a key of 0
+//        data.addUint8(0, (byte) 42);
+//
+//        // Add a key of 1, and a string value.
+//        data.addString(1, "A string");
+//
+//        PebbleKit.sendDataToPebble(context.getApplicationContext(), PEBBLE_APP_UUID, data);
+//
+//    }
 }

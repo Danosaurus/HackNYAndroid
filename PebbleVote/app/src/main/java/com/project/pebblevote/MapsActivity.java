@@ -68,21 +68,31 @@ public class MapsActivity extends FragmentActivity
     private static final String TAG = "MyActivity";
     private RequestQueue queue;
 
+    private List<LocationModel> obtainedResults;
+
+    private Context context = this;
+
     private final static UUID PEBBLE_APP_UUID = UUID.fromString("2105c9d1-862c-40df-8369-a411e2b8d8e6");
 
+    private boolean pebbleReady = false;
 
     public LatLng curLatLng;
+
+    private static final int STATUS_KEY = 1;
+    private static final int LOCATION_KEY = 2;
+    private static final int SCORE_KEY = 3;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        setUpMapIfNeeded();
+//        setUpMapIfNeeded();
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Drive.API)
-                .addScope(Drive.SCOPE_FILE)
-                .build();
+//        mGoogleApiClient = new GoogleApiClient.Builder(this)
+//                .addApi(Drive.API)
+//                .addScope(Drive.SCOPE_FILE)
+//                .build();
     }
 
     @Override
@@ -122,7 +132,7 @@ public class MapsActivity extends FragmentActivity
     @Override
     protected void onResume() {
         super.onResume();
-        setUpMapIfNeeded();
+//        setUpMapIfNeeded();
     }
 
     /**
@@ -140,18 +150,18 @@ public class MapsActivity extends FragmentActivity
      * stopped or paused), {@link #onCreate(Bundle)} may not be called again so we should call this
      * method in {@link #onResume()} to guarantee that it will be called.
      */
-    private void setUpMapIfNeeded() {
-        // Do a null check to confirm that we have not already instantiated the map.
-        if (mMap == null) {
-            // Try to obtain the map from the SupportMapFragment.
-            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
-                    .getMap();
-            // Check if we were successful in obtaining the map.
-            if (mMap != null) {
-                setUpMap();
-            }
-        }
-    }
+//    private void setUpMapIfNeeded() {
+//        // Do a null check to confirm that we have not already instantiated the map.
+//        if (mMap == null) {
+//            // Try to obtain the map from the SupportMapFragment.
+//            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
+//                    .getMap();
+//            // Check if we were successful in obtaining the map.
+//            if (mMap != null) {
+//                setUpMap();
+//            }
+//        }
+//    }
 
     /**
      * This is where we can add markers or lines, add listeners or move the camera. In this case, we
@@ -226,7 +236,9 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void receiveData(final Context context, final int transactionId, final PebbleDictionary data) {
                 //Log.i(getLocalClassName(), "Received value=" + data.getUnsignedInteger(0) + " for key: 0");
-
+                if (data.getInteger(STATUS_KEY) == 1l) {
+                    new FetchLocationList().execute(curLatLng);
+                }
                 PebbleKit.sendAckToPebble(getApplicationContext(), transactionId);
             }
 
@@ -236,7 +248,7 @@ public class MapsActivity extends FragmentActivity
 
     @Override
     protected void onStop() {
-        mGoogleApiClient.disconnect();
+        //mGoogleApiClient.disconnect();
         super.onStop();
     }
 
@@ -318,7 +330,7 @@ public class MapsActivity extends FragmentActivity
      * We will just call the api end point and get a list of data, 10 of them to be precise
      *
      */
-    public static class FetchLocationList extends AsyncTask<LatLng, Void, List<LocationModel>> {
+    public class FetchLocationList extends AsyncTask<LatLng, Void, List<LocationModel>> {
 
         protected List<LocationModel> doInBackground(LatLng... location) {
 
@@ -390,7 +402,19 @@ public class MapsActivity extends FragmentActivity
                 }
             }
 
-            return getLocationModelFromJson(result);
+            List<LocationModel> results = getLocationModelFromJson(result);
+
+            PebbleDictionary data = new PebbleDictionary();
+
+            // Add a key of 0
+            for (LocationModel item : results){
+                data.addInt32(SCORE_KEY, item.getUpVotes() - item.getDownVotes());
+                data.addString(LOCATION_KEY, item.getName());
+            }
+
+            PebbleKit.sendDataToPebble(context.getApplicationContext(), PEBBLE_APP_UUID, data);
+
+            return results;
 
         }
 
@@ -426,7 +450,7 @@ public class MapsActivity extends FragmentActivity
 
         @Override
         protected void onPostExecute(List<LocationModel> results) {
-            //TODO: Your stuff here
+
         }
 
     }
