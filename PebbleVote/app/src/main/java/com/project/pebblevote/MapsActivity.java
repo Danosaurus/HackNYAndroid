@@ -11,7 +11,14 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -37,6 +44,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
@@ -52,6 +60,7 @@ public class MapsActivity extends FragmentActivity
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private GoogleApiClient mGoogleApiClient;
     private static final String TAG = "MyActivity";
+    private RequestQueue queue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,7 +190,9 @@ public class MapsActivity extends FragmentActivity
             e.printStackTrace();
         }
 
+        queue = Volley.newRequestQueue(this);
 
+        UpVoteContent("girl");
        // if (!mResolvingError) {
            // mGoogleApiClient.connect();
         //}
@@ -192,6 +203,7 @@ public class MapsActivity extends FragmentActivity
         mGoogleApiClient.disconnect();
         super.onStop();
     }
+
     private class FetchServerHealth extends AsyncTask<Void, Void, String> {
 
         @Override
@@ -202,7 +214,7 @@ public class MapsActivity extends FragmentActivity
             try {
                 uri = new Uri.Builder();
                 uri.scheme("http");
-                uri.authority("pebblevote.herokuapp.com/");
+                uri.authority("pebblevote.herokuapp.com");
                 uri.appendPath("_ah");
                 uri.appendPath("health");
                 uri.build();
@@ -281,8 +293,8 @@ public class MapsActivity extends FragmentActivity
             try {
                 uri = new Uri.Builder();
                 uri.scheme("http");
-                uri.authority("api.openweathermap.org");
-                uri.appendPath("");
+                uri.authority("pebblevote.herokuapp.com");
+                uri.appendPath("locations");
                 uri.appendQueryParameter("latitude", String.valueOf(firstLocation.latitude));
                 uri.appendQueryParameter("longitude", String.valueOf(firstLocation.longitude));
                 uri.build();
@@ -375,7 +387,62 @@ public class MapsActivity extends FragmentActivity
     }
 
     private void  UpVoteContent (String location) {
+
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "";
+
+        JSONObject toSend = new JSONObject();
+        try {
+            toSend.put("lookup", location);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST,
+                "http://pebblevote.herokuapp.com/upvote", toSend,
+                new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                Log.d(TAG, response.toString());
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                VolleyLog.d(TAG, "Error: " + error.getMessage());
+            }
+        });
+
+        queue.add(req);
+
+    }
+
+    private void  DownVoteContent (String location) {
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        JSONObject toSend = new JSONObject();
+        try {
+            toSend.put("lookup", location);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.POST,
+                "http://pebblevote.herokuapp.com/downvote", toSend,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d(TAG, response.toString());
+                    }
+                }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                VolleyLog.d(TAG, "Error: " + error.getMessage());
+            }
+        });
+
+        queue.add(req);
+
     }
 }
