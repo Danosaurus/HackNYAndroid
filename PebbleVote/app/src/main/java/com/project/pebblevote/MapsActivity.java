@@ -24,6 +24,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.getpebble.android.kit.PebbleKit;
 
+import com.getpebble.android.kit.util.PebbleDictionary;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -56,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class MapsActivity extends FragmentActivity 
@@ -65,6 +67,11 @@ public class MapsActivity extends FragmentActivity
     private GoogleApiClient mGoogleApiClient;
     private static final String TAG = "MyActivity";
     private RequestQueue queue;
+
+    private final static UUID PEBBLE_APP_UUID = UUID.fromString("2105c9d1-862c-40df-8369-a411e2b8d8e6");
+
+
+    public LatLng curLatLng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -169,6 +176,7 @@ public class MapsActivity extends FragmentActivity
             @Override
             public void onLocationChanged(Location loc) {
                 //HERE YOU CAN UPDATE THE LOCATION WHEN AS YOU MOVE
+                curLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
                 String longitude = "Longitude: " + loc.getLongitude();
                 Log.v(TAG, longitude);
                 String latitude = "Latitude: " + loc.getLatitude();
@@ -194,6 +202,7 @@ public class MapsActivity extends FragmentActivity
             //COULD REMOVE IN YOU WANT THIS IS ONLY FOR TESTING...
             Log.v(TAG, "=================" + location.getLatitude());
             Log.v(TAG, "=================" + location.getLongitude());
+            curLatLng = new LatLng(location.getLatitude(), location.getLongitude());
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -211,6 +220,18 @@ public class MapsActivity extends FragmentActivity
                 Log.i(getLocalClassName(), "Pebble disconnected!");
             }
         });
+
+        PebbleKit.registerReceivedDataHandler(this, new PebbleKit.PebbleDataReceiver(PEBBLE_APP_UUID) {
+
+            @Override
+            public void receiveData(final Context context, final int transactionId, final PebbleDictionary data) {
+                Log.i(getLocalClassName(), "Received value=" + data.getUnsignedInteger(0) + " for key: 0");
+
+                PebbleKit.sendAckToPebble(getApplicationContext(), transactionId);
+            }
+
+        });
+
     }
 
     @Override
@@ -297,7 +318,7 @@ public class MapsActivity extends FragmentActivity
      * We will just call the api end point and get a list of data, 10 of them to be precise
      *
      */
-    private class FetchLocationList extends AsyncTask<LatLng, Void, List<LocationModel>> {
+    public static class FetchLocationList extends AsyncTask<LatLng, Void, List<LocationModel>> {
 
         protected List<LocationModel> doInBackground(LatLng... location) {
 
@@ -383,8 +404,10 @@ public class MapsActivity extends FragmentActivity
                     JSONObject e = jsonLocationModelList.getJSONObject(i);
                     model.setName(e.getString(LocationModel.LM_NAME));
                     model.setNeightborhood(e.getString(LocationModel.LM_BOROUGH));
-                    model.setLatitude(e.getDouble(LocationModel.LM_LATITUDE));
-                    model.setLongitude(e.getDouble(LocationModel.LM_LONGITUDE));
+                    double[] temp = e.getJSONObject("loc").getJSONObject("coordinates");
+                    Log.i(TAG, temp.toString());
+//                    model.setLatitude(temp[0]);
+//                    model.setLongitude(temp[1]);
                     model.setUpVotes(e.getInt(LocationModel.LM_UPVOTE));
                     model.setDownVotes(e.getInt(LocationModel.LM_DOWNVOTE));
 
