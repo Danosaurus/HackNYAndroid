@@ -401,7 +401,7 @@ public class MapsActivity extends FragmentActivity
         }
     }
 
-    private void  UpVoteContent (String location) {
+    private void UpVoteContent (String location) {
 
         JSONObject toSend = new JSONObject();
         try {
