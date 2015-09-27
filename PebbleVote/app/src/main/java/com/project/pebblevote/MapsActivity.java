@@ -11,6 +11,8 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -39,7 +41,9 @@ import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class MapsActivity extends FragmentActivity 
@@ -164,12 +168,16 @@ public class MapsActivity extends FragmentActivity
             public void onProviderDisabled(String provider) {}
         };
         try {
+
+            boolean isGPSEnabled = locationManager
+                    .isProviderEnabled(LocationManager.GPS_PROVIDER);
+
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, locationListener); //CHANGE THIS INTERVAL FOR MORE FREQUENT UPDATES
             Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             //COULD REMOVE IN YOU WANT THIS IS ONLY FOR TESTING...
             Log.v(TAG, "=================" + location.getLatitude());
             Log.v(TAG, "=================" + location.getLongitude());
-        } catch (SecurityException e){
+        } catch (Exception e){
             e.printStackTrace();
         }
 
@@ -262,101 +270,112 @@ public class MapsActivity extends FragmentActivity
      * We will just call the api end point and get a list of data, 10 of them to be precise
      *
      */
-    private List<LocationModel> getPlaceLocation(LatLng location) {
-        Uri.Builder uri = null;
-        URL url = null;
-        try {
-            uri = new Uri.Builder();
-            uri.scheme("http");
-            uri.authority("api.openweathermap.org");
-            uri.appendPath("");
-            uri.appendQueryParameter("latitude", String.valueOf(location.latitude));
-            uri.appendQueryParameter("longitude", String.valueOf(location.longitude));
-            uri.build();
-            url = new URL(uri.toString());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private class FetchLocationList extends AsyncTask<LatLng, Void, List<LocationModel>> {
 
-        HttpURLConnection urlConnection = null;
-        BufferedReader reader = null;
-        String result = null;
+        protected List<LocationModel> doInBackground(LatLng... location) {
 
-        try {
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.connect();
+            LatLng firstLocation = location[0];
 
-            InputStream inputStream = urlConnection.getInputStream();
-
-            StringBuffer buffer = new StringBuffer();
-            if (inputStream == null) {
-                // Nothing to do.
-                return null;
+            Uri.Builder uri = null;
+            URL url = null;
+            try {
+                uri = new Uri.Builder();
+                uri.scheme("http");
+                uri.authority("api.openweathermap.org");
+                uri.appendPath("");
+                uri.appendQueryParameter("latitude", String.valueOf(firstLocation.latitude));
+                uri.appendQueryParameter("longitude", String.valueOf(firstLocation.longitude));
+                uri.build();
+                url = new URL(uri.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            reader = new BufferedReader(new InputStreamReader(inputStream));
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String result = null;
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                // But it does make debugging a *lot* easier if you print out the completed
-                // buffer for debugging.
-                buffer.append(line + "\n");
-            }
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
 
-            if (buffer.length() == 0) {
-                // Stream was empty.  No point in parsing.
-                return null;
-            }
-            result = buffer.toString();
+                InputStream inputStream = urlConnection.getInputStream();
 
-        } catch (ProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally{
-            if (urlConnection != null) {
-                //always disconnect and close
-                urlConnection.disconnect();
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
+                StringBuffer buffer = new StringBuffer();
+                if (inputStream == null) {
+                    // Nothing to do.
+                    return null;
+                }
 
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // But it does make debugging a *lot* easier if you print out the completed
+                    // buffer for debugging.
+                    buffer.append(line + "\n");
+                }
+
+                if (buffer.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    return null;
+                }
+                result = buffer.toString();
+
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    //always disconnect and close
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (final IOException e) {
+
+                    }
                 }
             }
+
+            return getLocationModelFromJson(result);
+
         }
 
-        return getLocationModelFromJson(result);
+        private List<LocationModel> getLocationModelFromJson(String JSON) {
 
+            try {
+                JSONArray jsonLocationModelList = new JSONArray(JSON);
+                List<LocationModel> toReturn = new ArrayList<>();
+                for (int i = 0; i < jsonLocationModelList.length(); i++) {
+                    LocationModel model = new LocationModel();
+                    JSONObject e = jsonLocationModelList.getJSONObject(i);
+                    model.setName(e.getString(LocationModel.LM_NAME));
+                    model.setNeightborhood(e.getString(LocationModel.LM_BOROUGH));
+                    model.setLatitude(e.getDouble(LocationModel.LM_LATITUDE));
+                    model.setLongitude(e.getDouble(LocationModel.LM_LONGITUDE));
+                    model.setUpVotes(e.getInt(LocationModel.LM_UPVOTE));
+                    model.setDownVotes(e.getInt(LocationModel.LM_DOWNVOTE));
+
+                    toReturn.add(model);
+                }
+
+                return toReturn;
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+
+                return null;
+            }
+        }
     }
 
-    private List<LocationModel> getLocationModelFromJson(String JSON) {
-
-        try {
-            JSONArray jsonLocationModelList = new JSONArray(JSON);
-            List<LocationModel> toReturn = new ArrayList<>();
-            for (int i = 0; i < jsonLocationModelList.length(); i++){
-                LocationModel model = new LocationModel();
-                JSONObject e = jsonLocationModelList.getJSONObject(i);
-                model.setName(e.getString(LocationModel.LM_NAME));
-                model.setNeightborhood(e.getString(LocationModel.LM_BOROUGH));
-                model.setLatitude(e.getDouble(LocationModel.LM_LATITUDE));
-                model.setLongitude(e.getDouble(LocationModel.LM_LONGITUDE));
-                model.setUpVotes(e.getInt(LocationModel.LM_UPVOTE));
-                model.setDownVotes(e.getInt(LocationModel.LM_DOWNVOTE));
-
-                toReturn.add(model);
-            }
-
-            return toReturn;
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-
-            return null;
-        }
+    private void  UpVoteContent (String location) {
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url = ""
     }
 }
