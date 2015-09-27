@@ -225,7 +225,7 @@ public class MapsActivity extends FragmentActivity
 
             @Override
             public void receiveData(final Context context, final int transactionId, final PebbleDictionary data) {
-                Log.i(getLocalClassName(), "Received value=" + data.getUnsignedInteger(0) + " for key: 0");
+                //Log.i(getLocalClassName(), "Received value=" + data.getUnsignedInteger(0) + " for key: 0");
 
                 PebbleKit.sendAckToPebble(getApplicationContext(), transactionId);
             }
@@ -404,8 +404,9 @@ public class MapsActivity extends FragmentActivity
                     JSONObject e = jsonLocationModelList.getJSONObject(i);
                     model.setName(e.getString(LocationModel.LM_NAME));
                     model.setNeightborhood(e.getString(LocationModel.LM_BOROUGH));
-                    double[] temp = e.getJSONObject("loc").getJSONObject("coordinates");
-                    Log.i(TAG, temp.toString());
+                    model.setLatitude((Double) e.getJSONObject("loc").getJSONArray("coordinates").get(0));
+                    model.setLongitude((Double) e.getJSONObject("loc").getJSONArray("coordinates").get(1));
+                    //Log.i(TAG, temp.toString());
 //                    model.setLatitude(temp[0]);
 //                    model.setLongitude(temp[1]);
                     model.setUpVotes(e.getInt(LocationModel.LM_UPVOTE));
@@ -422,6 +423,12 @@ public class MapsActivity extends FragmentActivity
                 return null;
             }
         }
+
+        @Override
+        protected void onPostExecute(List<LocationModel> results) {
+            //TODO: Your stuff here
+        }
+
     }
 
     private void UpVoteContent (String location) {
