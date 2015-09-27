@@ -1,6 +1,8 @@
 package com.project.pebblevote;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -11,6 +13,7 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.getpebble.android.kit.PebbleKit;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -142,6 +145,9 @@ public class MapsActivity extends FragmentActivity
     @Override
     protected void onStart() {
         super.onStart();
+        boolean connected = PebbleKit.isWatchConnected(getApplicationContext());
+        Log.i(getLocalClassName(), "Pebble is " + (connected ? "connected" : "not connected"));
+
 
         LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
@@ -173,8 +179,21 @@ public class MapsActivity extends FragmentActivity
             e.printStackTrace();
         }
 
+        PebbleKit.registerPebbleConnectedReceiver(getApplicationContext(), new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(getLocalClassName(), "Pebble connected!");
+            }
+        });
 
-       // if (!mResolvingError) {
+        PebbleKit.registerPebbleDisconnectedReceiver(getApplicationContext(), new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(getLocalClassName(), "Pebble disconnected!");
+            }
+        });
+
+        // if (!mResolvingError) {
            // mGoogleApiClient.connect();
         //}
     }
