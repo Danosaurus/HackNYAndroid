@@ -1,6 +1,8 @@
 package com.project.pebblevote;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -20,6 +22,8 @@ import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.getpebble.android.kit.PebbleKit;
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -155,6 +159,10 @@ public class MapsActivity extends FragmentActivity
     @Override
     protected void onStart() {
         super.onStart();
+        queue = Volley.newRequestQueue(this);
+        boolean connected = PebbleKit.isWatchConnected(getApplicationContext());
+        Log.i(getLocalClassName(), "Pebble is " + (connected ? "connected" : "not connected"));
+
 
         LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
@@ -190,12 +198,19 @@ public class MapsActivity extends FragmentActivity
             e.printStackTrace();
         }
 
-        queue = Volley.newRequestQueue(this);
+        PebbleKit.registerPebbleConnectedReceiver(getApplicationContext(), new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(getLocalClassName(), "Pebble connected!");
+            }
+        });
 
-        UpVoteContent("girl");
-       // if (!mResolvingError) {
-           // mGoogleApiClient.connect();
-        //}
+        PebbleKit.registerPebbleDisconnectedReceiver(getApplicationContext(), new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.i(getLocalClassName(), "Pebble disconnected!");
+            }
+        });
     }
 
     @Override
@@ -388,8 +403,6 @@ public class MapsActivity extends FragmentActivity
 
     private void  UpVoteContent (String location) {
 
-        RequestQueue queue = Volley.newRequestQueue(this);
-
         JSONObject toSend = new JSONObject();
         try {
             toSend.put("lookup", location);
@@ -417,8 +430,6 @@ public class MapsActivity extends FragmentActivity
     }
 
     private void  DownVoteContent (String location) {
-
-        RequestQueue queue = Volley.newRequestQueue(this);
 
         JSONObject toSend = new JSONObject();
         try {
