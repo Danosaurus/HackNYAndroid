@@ -1,5 +1,10 @@
 package com.project.pebblevote;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.FragmentActivity;
@@ -86,7 +91,8 @@ public class MapsActivity extends FragmentActivity
         // may occur while attempting to connect with Google.
         //
         // More about this in the 'Handle Connection Failures' section.
-        new FetchServerHealth().execute();
+        Log.i(TAG, String.format("Connection Failed :("));
+        //new FetchServerHealth().execute();
     }
 
     @Override
@@ -136,8 +142,40 @@ public class MapsActivity extends FragmentActivity
     @Override
     protected void onStart() {
         super.onStart();
+
+        LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        LocationListener locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location loc) {
+                //HERE YOU CAN UPDATE THE LOCATION WHEN AS YOU MOVE
+                String longitude = "Longitude: " + loc.getLongitude();
+                Log.v(TAG, longitude);
+                String latitude = "Latitude: " + loc.getLatitude();
+                Log.v(TAG, latitude);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+            @Override
+            public void onProviderEnabled(String provider) {}
+
+            @Override
+            public void onProviderDisabled(String provider) {}
+        };
+        try {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, locationListener); //CHANGE THIS INTERVAL FOR MORE FREQUENT UPDATES
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            //COULD REMOVE IN YOU WANT THIS IS ONLY FOR TESTING...
+            Log.v(TAG, "=================" + location.getLatitude());
+            Log.v(TAG, "=================" + location.getLongitude());
+        } catch (SecurityException e){
+            e.printStackTrace();
+        }
+
+
        // if (!mResolvingError) {
-            mGoogleApiClient.connect();
+           // mGoogleApiClient.connect();
         //}
     }
 
