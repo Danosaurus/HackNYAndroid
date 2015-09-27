@@ -24,4 +24,10 @@ dependencies {
     compile 'com.google.android.gms:play-services:7.8.0'
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'eu.the4thfloor.volley:com.android.volley:2015.05.28'
+    compile 'com.getpebble:pebblekit:3.0.0'
+}
+
+repositories {
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/groups/public/" }
 }

@@ -376,6 +376,6 @@ public class MapsActivity extends FragmentActivity
 
     private void  UpVoteContent (String location) {
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = ""
+        String url = "";
     }
 }
